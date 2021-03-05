@@ -1,12 +1,36 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace Words
 {
     class Program
     {
-        static string MainWord;
+        /// <summary>
+        /// game word
+        /// </summary>
+        static string mainWord;
+
+
+        /// <summary>
+        /// errors that may occur when validating the game word
+        /// </summary>
+        enum ValidationErrors
+        {
+            /// <summary>word is valid</summary>
+            Valid,
+
+            /// <summary> word is short</summary>
+            TooShort,
+
+            /// <summary>word is long</summary>
+            TooLong,
+
+            /// <summary> there are wrong symbols in the word</summary>
+            WrongSymbol,
+
+            /// <summary>word is empty</summary>
+            Empty
+        };
 
         static void Main(string[] args)
         {
@@ -15,13 +39,15 @@ namespace Words
         }
 
 
-        //игровой цикл, после завершения игры можно начать заново
+       /// <summary>
+       /// game cycle, after completing the game, you can start again
+       /// </summary>
         static void GameCycle()
         {
-            MainWord = begin();
-            game(1); //игра начинается с первого игрока
+            mainWord = EnterWord();
+            StartGame(1); //the game starts from first player
 
-            Console.WriteLine("Нажмите 1, чтобы начать заново, нажмите любую клавишу для выхода из игры");
+            Console.WriteLine("Нажмите 1 для перезапуска игры, нажмите любую клавишу для выхода");
 
             switch (Console.ReadLine())
             {
@@ -35,75 +61,120 @@ namespace Words
         }
 
 
-        //ввод игрового слова, при неправильном вводе появляется соответсвующее сообщение и предлагается ввести слово заново
-        static string begin()
+        ///<summary>
+        ///entering a game word, if you enter it incorrectly, a corresponding message appears 
+        ///and you are prompted to enter the word again
+        ///</summary>
+        static string EnterWord()
         {
-            Console.Write("Введите слово русскими буквами, от 8 до 30 символов: ");
+            Console.Write("Введите слово, от 8 до 30 букв: ");
             string word = Console.ReadLine();
-            if (!valid(word, 1))
+
+            switch (Validate(word, 1))
             {
-                Console.WriteLine("Неверный формат!");
-                return begin();
+                case ValidationErrors.Valid:
+                    return word;
+
+                case ValidationErrors.Empty:
+                    Console.WriteLine("Введена пустая строка! Попробуйте снова.");
+                    return EnterWord();
+
+                case ValidationErrors.TooShort:
+                    Console.WriteLine("Слово слишком короткое! Попробуйте снова.");
+                    return EnterWord();
+
+                case ValidationErrors.TooLong:
+                    Console.WriteLine("Слово слишком длинное! Попробуйте снова.");
+                    return EnterWord();
+
+                case ValidationErrors.WrongSymbol:
+                    Console.WriteLine("Неверные символы! Попробуйте снова.");
+                    return EnterWord();
+
+                default:
+                    Console.WriteLine("Неизвестная ошибка! Попробуйте снова.");
+                    return EnterWord();
             }
-            else return word;
         }
 
 
-        //проверка игрового слова, оно должно состоять только из букв латинского алфавита и иметь длину в указанном диапазоне
-        static bool valid(string str, int len)
+        /// <summary>
+        /// checking the game word, it must consist only of letters and have a length in the specified range
+        /// </summary>
+        /// <param name="inputString">input word</param>
+        /// <param name="len">length of the word</param>
+        static ValidationErrors Validate(string inputString, int len)
         {
-            if (str == String.Empty)
-                return false;
+            if (inputString == String.Empty)
+                return ValidationErrors.Empty;
 
-            char letter = str[0];
-
-            if ((letter >= 'А' && letter <= 'Я') || (letter >= 'а' && letter <= 'я'))
+            char letter = inputString[0];
+            
+            if (Char.IsLetter(letter))
             {
-                if (str.Length == 1) //если последний просмотренный символ верный и слово нужной длины, то слово подходит
-                    if (len >= 8 && len <= 30)
-                        return true;
-                    else
-                        return false;
+                //if the last viewed character is correct and the word is the correct length, then the word is valid
+                if (inputString.Length == 1)
+                    if (len < 8)
+                    {
+                        return ValidationErrors.TooShort;
+                    }
+                    else if (len > 30)
+                    {
+                        return ValidationErrors.TooLong;
+                    }
+                    else 
+                        return ValidationErrors.Valid;
 
-                //слово постепенно укорачивается, пока не останется одна буква, также вычисляется итоговая длина слова
-                return valid(str.Substring(1), len + 1);
+               //the word is gradually shortened until there is only one letter left 
+               //the total length of the word is also calculated
+                return Validate(inputString.Substring(1), len + 1);
             }
             else
-                return false;
+            {
+                return ValidationErrors.WrongSymbol;
+            }
         }
 
 
-        //игровой процесс, игроки поочередно вводят слова по установленным правилам, при проигрыше одного из них игра заканчивается
-        static void game(int n)
+        /// <summary>
+        /// gameplay, players alternately enter words according to the established rules, 
+        /// if you lose one of them, the game ends
+        /// </summary>
+        /// <param name="playerNumber">number of active player</param>
+        static void StartGame(int playerNumber)
         {
-            Console.Write($"Игрок{n}: ");
-            string InputWord = Console.ReadLine();
-            if (check(InputWord, MainWord))
-                if (n == 2)  //смена игроков
-                    game(1);
-                else game(2);
+            Console.Write($"Игрок{playerNumber}: ");
+            string inputWord = Console.ReadLine();
+            if (Check(inputWord, mainWord))
+                if (playerNumber == 2)  //change player
+                    StartGame(1);
+                else StartGame(2);
             else
             {
-                Console.WriteLine($"Игрок{n} проиграл.");
+                Console.WriteLine($"Игрок{playerNumber} проиграл.");
                 return;
             }
         }
 
 
-        //проверка введенного игроком слова, оно должно включать в себя только буквы игрового слова
-        //буква не может повторяться большее число раз, чем в исходном игровом слове 
-        static bool check(string InputWord, string mainword)
+        /// <summary>
+        /// checking the word entered by the player, it must include only the letters of the game word
+        /// the letter cannot be repeated more times than in the original game word
+        /// </summary>
+        /// <param name="inputWord"> word that player entered</param>
+        /// <param name="gameWord">game word</param> 
+        static bool Check(string inputWord, string gameWord)
         {
-            if (InputWord.Length == 0 || !mainword.Contains(InputWord[0]))
+            if (inputWord.Length == 0 || !gameWord.Contains(inputWord[0]))
                 return false;
             else
             {
-                if (InputWord.Length == 1)
+                if (inputWord.Length == 1)
                     return true;
                 else
                 {
-                    int index = mainword.IndexOf(InputWord[0]);
-                    return check(InputWord.Substring(1), mainword.Remove(index, 1));
+                    int index = gameWord.IndexOf(inputWord[0]);
+                    return Check(inputWord.Substring(1), gameWord.Remove(index, 1));
                 }
             }
         }
